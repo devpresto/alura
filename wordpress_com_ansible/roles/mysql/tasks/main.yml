@@ -1,0 +1,33 @@
+---
+- name: 'Install OS dependency packages'
+  apt:
+    name:
+      - mysql-server-5.6
+      - python-mysqldb
+    state: latest
+  become: yes
+
+- name: 'Create Database'
+  mysql_db:
+    name: "{{ wp_dbname }}"
+    login_user: root
+    state: present
+
+- name: 'Create user from MySQL'    
+  mysql_user:
+    login_user: root
+    name: "{{ wp_username }}"
+    password: "{{ wp_user_password }}"
+    priv: "{{ wp_dbname }}.*:ALL"
+    state: present
+    host: "{{ item }}"
+  with_items:
+    - "{{ wp_host_ip }}"
+
+- name: 'Configure MySQL to remote connect'
+  copy:
+    src: 'files/my.cnf'
+    dest: '/etc/mysql/my.cnf'
+  become: yes
+  notify: 
+    - restart mysql
